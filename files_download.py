@@ -6,5 +6,5 @@ def save_out(url: str):
     html = response.read()
     
     # Save the HTML to a file
-    with open("example.html", "wb") as file:
+    with open("sensor_data.html", "wb") as file:
         file.write(html)
