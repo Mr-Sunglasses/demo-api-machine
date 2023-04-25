@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 import sqlite3
 import time
-
+from files_download import save_out
 app = Flask(__name__)
 
 # Create a database and a table
@@ -16,6 +16,9 @@ conn.execute('''CREATE TABLE IF NOT EXISTS sensor_data
              Z_ACC REAL NOT NULL);''')
 print("Table created successfully")
 conn.close()
+
+#Download Content
+save_out(url = "Your URL")
 
 # Define a function to parse the HTML file and insert data into the database
 def insert_sensor_data():
