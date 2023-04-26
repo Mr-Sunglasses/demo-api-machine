@@ -2,6 +2,8 @@ from flask import Flask, jsonify
 import sqlite3
 import time
 from files_download import save_out
+from bs4 import BeautifulSoup
+import re
 app = Flask(__name__)
 
 # Create a database and a table
@@ -9,34 +11,36 @@ conn = sqlite3.connect('sensor_data.db')
 print("Opened database successfully")
 conn.execute('''CREATE TABLE IF NOT EXISTS sensor_data
              (ID INTEGER PRIMARY KEY AUTOINCREMENT,
-             TEMPERATURE REAL NOT NULL,
-             HUMIDITY REAL NOT NULL,
-             X_ACC REAL NOT NULL,
-             Y_ACC REAL NOT NULL,
-             Z_ACC REAL NOT NULL);''')
+             TEMPERATURE TEXT NOT NULL,
+             HUMIDITY TEXT NOT NULL,
+             X_ACC TEXT NOT NULL,
+             Y_ACC TEXT NOT NULL,
+             Z_ACC TEXT NOT NULL);''')
 print("Table created successfully")
 conn.close()
 
-#Download Content
-save_out(url = "Your URL")
+save_out(url = "http://192.168.110.245/")
 
 # Define a function to parse the HTML file and insert data into the database
 def insert_sensor_data():
     with open('sensor_data.html', 'r') as f:
         content = f.read()
 
-    # Parse the temperature, humidity, x_acc, y_acc, and z_acc from the HTML file
-    temperature = float(content.split('tempreture</p><p>')[1].split('&#xB0;C</p>')[0])
-    humidity = float(content.split('humidity</p><p>')[1].split('%</p>')[0])
-    x_acc = float(content.split('<p>x_acc</p><p>')[1].split('</p>')[0])
-    y_acc = float(content.split('<p>y_acc</p><p>')[1].split('</p>')[0])
-    z_acc = float(content.split('<p>z_acc</p><p>')[1].split('</p>')[0])
+    soup = BeautifulSoup(content, 'html.parser')
 
+    temperature = soup.find_all('p')[1].text
+    temperature = re.sub(r'[^0-9.]', '', temperature)
+    humidity = soup.find_all('p')[3].text
+    x_acc = soup.find_all('p')[6].text
+    y_acc = soup.find_all('p')[8].text
+    z_acc = soup.find_all('p')[10].text
     # Insert the data into the database
     conn = sqlite3.connect('sensor_data.db')
     print("Opened database successfully")
-    conn.execute(f"INSERT INTO sensor_data (TEMPERATURE, HUMIDITY, X_ACC, Y_ACC, Z_ACC) \
-                 VALUES ({temperature}, {humidity}, {x_acc}, {y_acc}, {z_acc})")
+    # conn.execute(f"INSERT INTO sensor_data (TEMPERATURE, HUMIDITY, X_ACC, Y_ACC, Z_ACC) \
+    #              VALUES ({str(temperature)}, {str(humidity)}, {str(x_acc)}, {str(y_acc)}, {str(z_acc)})")
+    conn.execute("INSERT INTO sensor_data (TEMPERATURE, HUMIDITY, X_ACC, Y_ACC, Z_ACC) VALUES (?, ?, ?, ?, ?)",
+                 (temperature, humidity, x_acc, y_acc, z_acc))
     conn.commit()
     print("Records created successfully")
     conn.close()
